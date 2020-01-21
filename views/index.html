@@ -1,0 +1,73 @@
+<head>
+    <script src="../static/jssip.js"></script>
+</head>
+
+<body>
+    <input type="text" id="">
+    <video id="selfView" autoplay muted="true" _hidden=true></video>
+    <video id="remoteView" autoplay _hidden=true></video>
+</body>
+
+<script>
+    var selfView = document.getElementById('selfView');
+    var remoteView = document.getElementById('remoteView');
+    //let JsSIP = require('jssip');
+    JsSIP.debug.enable('JsSIP:*');
+    //Inicio da configuração do ramal
+    let socket = new JsSIP.WebSocketInterface('ws://64.225.14.27:8088/asterisk/ws');
+    var configuration = {
+        sockets: [socket],
+        uri: 'sip:S1009@64.225.14.27:50666',
+        password: '1cfirophrhs',
+    };
+
+    ua = new JsSIP.UA(configuration);
+
+    ua.start();
+    document.addEventListener('DOMContentLoaded', function() {
+        // HTML5 <video> elements in which local and remote video will be shown
+
+        // Register callbacks to desired call events
+        var eventHandlers = {
+            'progress': function(e) {
+                console.log(e)
+            },
+            'failed': function(e) {
+                alert('call failed: ' + e.cause);
+            },
+            'accepted': function(e) {
+                // Attach local stream to selfView
+                if (call.connection.getLocalStreams().length > 0) {
+                    localStream = call.connection.getLocalStreams()[0];
+                    selfView = JsSIP.rtcninja.attachMediaStream(selfView, localStream);
+                    selfView.volume = 0;
+                }
+            },
+            'confirmed': function(e) {
+                // Attach local stream to selfView
+                selfView.src = window.URL.createObjectURL(session.connection.getLocalStreams()[0]);
+            },
+            'addstream': function(e) {
+                // Attach remote stream to remoteView
+                remoteStream = e.stream;
+                remoteView = JsSIP.rtcninja.attachMediaStream(remoteView, remoteStream);
+            },
+            'ended': function(e) { /* Your code here */ }
+        };
+
+        var options = {
+            'eventHandlers': eventHandlers,
+            'extraHeaders': ['X-Foo: foo', 'X-Bar: bar'],
+            'mediaConstraints': {
+                'audio': true,
+                'video': true
+            }
+        };
+
+        //session = ua.call('sip:S1004', options);
+        var call = ua.call('sip:S1004', {
+            'eventHandlers': eventHandlers
+        });
+
+    }, false);
+</script>
